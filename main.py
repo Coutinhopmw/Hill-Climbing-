@@ -2,6 +2,7 @@ import random
 import math
 import csv
 import matplotlib.pyplot as plt
+import time
 
 # FUNÇÃO DE CALCULO DA DISTÂNCIA ENTRE AS CIDADES
 def distancia(cidade1, cidade2):
@@ -31,6 +32,10 @@ def hill_climbing_tsp(cidades, max_iter=1000):
     rota_atual = list(range(len(cidades)))
     random.shuffle(rota_atual)
     custo_atual = funcao_objetivo(rota_atual, cidades)
+
+    tempos = []
+    custos = []
+    inicio = time.time()
     
     print(f"Rota inicial: {rota_atual}, Custo: {custo_atual:.4f}")
     
@@ -47,12 +52,15 @@ def hill_climbing_tsp(cidades, max_iter=1000):
         if melhor_vizinho is not None and melhor_custo < custo_atual:
             rota_atual = melhor_vizinho
             custo_atual = melhor_custo
-            print(f"Iteração {i + 1}: Nova rota encontrada -> {rota_atual}, Custo: {custo_atual:.4f}")
+            tempo_atual = time.time() - inicio
+            tempos.append(tempo_atual)
+            custos.append(custo_atual)
+            print(f"Iteração {i + 1}: Nova rota encontrada -> Custo: {custo_atual:.4f}, Tempo: {tempo_atual:.4f}s")
         else:
             print("Nenhuma melhoria encontrada. Parando o algoritmo.")
             break
     
-    return rota_atual, custo_atual
+    return rota_atual, custo_atual, tempos, custos
 
 # FUNÇÃO PARA LER CIDADES DO CSV (COM NOME, X, Y)
 def ler_cidades_csv(caminho_arquivo):
@@ -87,6 +95,18 @@ def plotar_rota(cidades, nomes, rota, custo_total):
     plt.grid(True)
     plt.show()
 
+# FUNÇÃO PARA PLOTAR O GRÁFICO DE TEMPO E CUSTO
+def plotar_tempo_custo(tempos, custos):
+    plt.figure(figsize=(10, 6))
+    plt.fill_between(tempos, custos, color='skyblue', alpha=0.5)
+    plt.plot(tempos, custos, 'b-', linewidth=2)
+    
+    plt.title('Evolução do Custo ao Longo do Tempo')
+    plt.xlabel('Tempo (segundos)')
+    plt.ylabel('Custo da Rota')
+    plt.grid(True)
+    plt.show()
+
 # Entrada principal
 if __name__ == "__main__":
     caminho_arquivo = 'cidades.csv'  # Nome do arquivo CSV
@@ -95,13 +115,20 @@ if __name__ == "__main__":
         cidades, nomes = ler_cidades_csv(caminho_arquivo)
         print(f"{len(cidades)} cidades carregadas do arquivo '{caminho_arquivo}'.")
         
-        melhor_rota, custo_total = hill_climbing_tsp(cidades)
+        melhor_rota, custo_total, tempos, custos = hill_climbing_tsp(cidades)
         
         print("\nResultado final:")
         print(f"Melhor rota: {melhor_rota}")
         print(f"Custo total: {custo_total:.4f}")
         
+        # Gráfico da rota final
         plotar_rota(cidades, nomes, melhor_rota, custo_total)
+        
+        # Gráfico de tempo vs custo
+        if tempos and custos:
+            plotar_tempo_custo(tempos, custos)
+        else:
+            print("Nenhuma melhoria registrada para gerar o gráfico de tempo.")
         
     except FileNotFoundError:
         print(f"Arquivo '{caminho_arquivo}' não encontrado. Certifique-se de que ele está no mesmo diretório do script.")
