@@ -68,7 +68,7 @@ def ler_cidades_csv(caminho_arquivo):
     nomes = []
     with open(caminho_arquivo, newline='') as csvfile:
         leitor = csv.reader(csvfile)
-        next(leitor)  # pula o cabeçalho
+        next(leitor)
         for linha in leitor:
             nome = linha[0]
             x = float(linha[1])
@@ -78,25 +78,59 @@ def ler_cidades_csv(caminho_arquivo):
     return cidades, nomes
 
 # FUNÇÃO PARA PLOTAR O GRÁFICO DA ROTA
-def plotar_rota(cidades, nomes, rota, custo_total):
+def calcular_distancia(p1, p2):
+    return ((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2) ** 0.5
+
+def plotar_rota(cidades, nomes, rota, custo_total, nome_arquivo='melhor_rota.png'):
     x_coords = [cidades[i][0] for i in rota] + [cidades[rota[0]][0]]
     y_coords = [cidades[i][1] for i in rota] + [cidades[rota[0]][1]]
     
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(12, 10))
+    
     plt.plot(x_coords, y_coords, 'bo-', label='Rota')
     
+    inicio = rota[0]
+    fim = rota[-1]
+    plt.plot(cidades[inicio][0], cidades[inicio][1], 'go', markersize=12, label='Início')
+    plt.plot(cidades[fim][0], cidades[fim][1], 'ro', markersize=12, label='Fim')
+    
     for i, nome in enumerate(nomes):
-        plt.text(cidades[i][0], cidades[i][1], nome, fontsize=8)
+        plt.text(cidades[i][0], cidades[i][1], nome, fontsize=9, ha='right', va='bottom')
+    
+    for i in range(len(rota)):
+        start_idx = rota[i]
+        end_idx = rota[(i + 1) % len(rota)]
+        
+        start_x, start_y = cidades[start_idx]
+        end_x, end_y = cidades[end_idx]
+        
+        dx = end_x - start_x
+        dy = end_y - start_y
+        
+        custo_parcial = calcular_distancia(cidades[start_idx], cidades[end_idx])
+        
+        plt.annotate(
+            '', xy=(end_x, end_y), xytext=(start_x, start_y),
+            arrowprops=dict(arrowstyle='->', color='red', lw=1)
+        )
+        
+        mid_x = (start_x + end_x) / 2
+        mid_y = (start_y + end_y) / 2
+        plt.text(mid_x, mid_y, f'{custo_parcial:.2f}', fontsize=8, color='purple', ha='center', va='center', bbox=dict(facecolor='white', alpha=0.6, boxstyle='round,pad=0.2'))
     
     plt.title(f'Melhor Rota Encontrada (Custo Total: {custo_total:.2f})')
     plt.xlabel('Coordenada X')
     plt.ylabel('Coordenada Y')
     plt.legend()
     plt.grid(True)
-    plt.show()
+
+    plt.savefig(nome_arquivo, dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    print(f'Gráfico salvo em: {nome_arquivo}')
 
 # FUNÇÃO PARA PLOTAR O GRÁFICO DE TEMPO E CUSTO
-def plotar_tempo_custo(tempos, custos):
+def plotar_tempo_custo(tempos, custos, nome_arquivo='tempo_custo.png'):
     plt.figure(figsize=(10, 6))
     plt.fill_between(tempos, custos, color='skyblue', alpha=0.5)
     plt.plot(tempos, custos, 'b-', linewidth=2)
@@ -105,11 +139,17 @@ def plotar_tempo_custo(tempos, custos):
     plt.xlabel('Tempo (segundos)')
     plt.ylabel('Custo da Rota')
     plt.grid(True)
-    plt.show()
+    
+    plt.savefig(nome_arquivo, dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    print(f'Gráfico salvo em: {nome_arquivo}')
+
+
 
 # Entrada principal
 if __name__ == "__main__":
-    caminho_arquivo = 'cidades.csv'  # Nome do arquivo CSV
+    caminho_arquivo = 'cidades.csv' 
     
     try:
         cidades, nomes = ler_cidades_csv(caminho_arquivo)
@@ -121,10 +161,8 @@ if __name__ == "__main__":
         print(f"Melhor rota: {melhor_rota}")
         print(f"Custo total: {custo_total:.4f}")
         
-        # Gráfico da rota final
         plotar_rota(cidades, nomes, melhor_rota, custo_total)
         
-        # Gráfico de tempo vs custo
         if tempos and custos:
             plotar_tempo_custo(tempos, custos)
         else:
